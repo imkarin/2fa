@@ -66,6 +66,34 @@ app.post('/api/verify', (req, res) => {
         console.log(e)
         res.status(500).json({ message: 'Error verifying token' })
     }
+   
+})
+
+app.post('/api/validate', (req, res) => {
+    // Continuously validate tokens from the authenticator to the user
+    const { userId, token } = req.body
+
+        try {
+            const path = `/user/${userId}`
+            user = db.getData(path)
+
+            // Validate user/token
+            const { base32:userSecret } = user.secret
+            tokenValidates = speakeasy.totp.verify({
+                secret: userSecret,
+                encoding: 'base32',
+                token
+            })
+
+            if (tokenValidates) {
+                res.json({ validated: true })
+            } else {
+                res.json({ validated: false }) // you could use this response in the front-end
+            }
+        } catch (e) {
+            console.log(e)
+            res.status(500).json({ message: 'Error verifying token' })
+        }
 })
 
 /* 
