@@ -1,5 +1,6 @@
 const express = require('express')
 const speakeasy = require('speakeasy')
+const QRCode = require('qrcode');
 const uuid = require('uuid')
 const { JsonDB } = require('node-json-db')
 const { Config } = require('node-json-db/dist/lib/JsonDBConfig')
@@ -27,7 +28,12 @@ app.post('/api/register', (req, res) => {
     try {
         const tempSecret = speakeasy.generateSecret()
         db.push(path, { id, tempSecret }) // normally you'd send username/pass to the db here too
-        res.json({ id, tempSecret: tempSecret.base32 }) 
+        // Send page with QR-code instead:
+        QRCode.toDataURL(
+            tempSecret.otpauth_url,  
+            (err, data_url) => {
+                res.send(`<img src='${data_url}' alt='user secret qr code' />`)
+            })
     } catch (e) {
         console.log(e)
         res.status(500).json({ message: 'Error registering user' })
@@ -66,7 +72,6 @@ app.post('/api/verify', (req, res) => {
         console.log(e)
         res.status(500).json({ message: 'Error verifying token' })
     }
-   
 })
 
 app.post('/api/validate', (req, res) => {
@@ -76,6 +81,12 @@ app.post('/api/validate', (req, res) => {
         try {
             const path = `/user/${userId}`
             user = db.getData(path)
+
+            // Check if user is verified yet
+            if (user.hasOwnProperty('tempSecret')) {
+                res.status(500).json({ message: 'User is not yet verified' })
+                return
+            }
 
             // Validate user/token
             const { base32:userSecret } = user.secret
