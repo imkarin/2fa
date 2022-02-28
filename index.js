@@ -25,10 +25,18 @@ app.post('/api/register', (req, res) => {
     const id = uuid.v4()
     const path = `/user/${id}`
 
+    // Get username and password
+    const { username, password } = req.body // To do: encrypt password
+    if(!username || !password) {
+        res.status(500).json({ message: 'Please provide a username and password' })
+        return
+    }
+
     try {
         const tempSecret = speakeasy.generateSecret()
-        db.push(path, { id, tempSecret }) // normally you'd send username/pass to the db here too
-        // Send page with QR-code instead:
+        db.push(path, { id, username, password, tempSecret }) 
+
+        // Create QR code and send it
         QRCode.toDataURL(
             tempSecret.otpauth_url,  
             (err, data_url) => {
@@ -63,7 +71,7 @@ app.post('/api/verify', (req, res) => {
         })
 
         if (verified) {
-            db.push(path, { id: userId, secret: user.tempSecret })
+            db.push(path, { id: userId, username: user.username, password: user.password, secret: user.tempSecret })
             res.json({ verified: true })
         } else {
             res.json({ verified: false }) // you could use this response in the front-end
