@@ -41,9 +41,15 @@ app.post('/api/verify', (req, res) => {
     try {
         const path = `/user/${userId}`
         user = db.getData(path)
-        console.log(user)
-        const { base32:userSecret } = user.tempSecret
 
+        // Check if user is already verified
+        if (!user.hasOwnProperty('tempSecret')) {
+            res.status(500).json({ message: 'User is already verified' })
+            return
+        }
+
+        // Verify user
+        const { base32:userSecret } = user.tempSecret
         verified = speakeasy.totp.verify({
             secret: userSecret,
             encoding: 'base32',
@@ -60,7 +66,7 @@ app.post('/api/verify', (req, res) => {
         console.log(e)
         res.status(500).json({ message: 'Error verifying token' })
     }
-}) 
+})
 
 /* 
 * End section: Routes
