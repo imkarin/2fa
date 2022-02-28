@@ -26,8 +26,8 @@ app.post('/api/register', (req, res) => {
 
     try {
         const tempSecret = speakeasy.generateSecret()
-        db.push(path, { id, tempSecret })
-        res.json({ id, tempSecret: tempSecret.base32 }) // normally you'd send username/pass here too
+        db.push(path, { id, tempSecret }) // normally you'd send username/pass to the db here too
+        res.json({ id, tempSecret: tempSecret.base32 }) 
     } catch (e) {
         console.log(e)
         res.status(500).json({ message: 'Error registering user' })
